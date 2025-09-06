@@ -57,7 +57,7 @@ src/
 ### Essential Commands
 ```bash
 # Development
-npm run dev              # Start dev server (usually localhost:5173)
+npm run dev              # Start dev server (currently localhost:5181)
 npm run build           # Production build
 npm run preview         # Preview production build
 
@@ -71,7 +71,7 @@ npm run preview         # Preview production build
 ```
 
 ### Development Workflow
-1. **Local Development**: Vite dev server with hot reload on `http://localhost:5173+`
+1. **Local Development**: Vite dev server with hot reload on `http://localhost:5181`
 2. **Database Changes**: Update `supabase-setup.sql` → Update TypeScript types → Update hooks
 3. **New Features**: Component → Hook → Route → Test locally
 4. **Production**: Test build → Deploy → Configure environment variables
@@ -218,11 +218,20 @@ queryClient.invalidateQueries({ queryKey: ['departments', officeId] })
 - Interactive event handling foundation
 - Positioned as absolute overlay with `pointer-events-none`
 
-### Future Vision
+### Future Vision with MCP Integration
 - **Drag & Drop**: Department positioning on office floor
 - **Animated Sprites**: Worker sprites moving between desks
 - **Activity Indicators**: Visual agent status and execution
 - **Pathfinding**: Smart sprite movement with collision detection
+
+**IMPORTANT NOTE**: When implementing PixiJS features, we will use the MCP server to access PixiJS documentation and examples. This ensures we have up-to-date information about PixiJS APIs, best practices, and implementation patterns. The MCP server provides real-time access to documentation without relying on potentially outdated training data.
+
+### PixiJS Implementation Plan (Phase 3+)
+1. **MCP Documentation Access**: Set up MCP server connection for PixiJS docs
+2. **Interactive Floor Plan**: Convert current grid layout to PixiJS canvas
+3. **Sprite Management**: Create department and agent sprites with proper animations
+4. **Interaction System**: Implement click, drag, and hover interactions
+5. **Performance Optimization**: Use PixiJS best practices for large office layouts
 
 ---
 
@@ -412,12 +421,22 @@ npm run preview
 ## 🐛 Troubleshooting Common Issues
 
 ### Development Issues
-- **Port Conflicts**: Vite auto-increments port (5173 → 5174 → 5175)
+- **Port Conflicts**: Vite auto-increments port (5173 → 5174 → ... → 5181 current)
 - **Environment Variables**: Restart dev server after .env changes
 - **TypeScript Errors**: Check interface definitions match database schema
 - **Supabase Connection**: Verify URL and anon key in .env
 
+### PostCSS/Tailwind CSS Issues ✅ RESOLVED
+- **ES Module Conflicts**: If project has `"type": "module"` in package.json, PostCSS config must use `.cjs` extension (`postcss.config.cjs`)
+- **Invalid @apply Directives**: PostCSS will crash on unknown utility classes like `@apply border-border`. Replace with standard CSS properties
+- **Plugin Configuration**: Use object syntax in PostCSS config: `{ tailwindcss: {}, autoprefixer: {} }`
+- **CSS Not Loading**: If no styles load, check PostCSS console errors first - invalid CSS can prevent all processing
+- **Diagnostic Testing**: Add `body { background-color: red !important; }` to CSS to test if any CSS is processing
+
+**Status**: These issues have been resolved. The application is currently running successfully on localhost:5181 with all CSS/styling working properly.
+
 ### Authentication Issues
+- **TypeScript Import Error**: Use `import type { User, Session }` instead of `import { User, Session }` from '@supabase/supabase-js' - these are types, not runtime values
 - **RLS Policies**: Ensure policies match current auth.uid()
 - **Session Persistence**: Check Supabase client configuration
 - **Token Expiry**: Handle automatic token refresh
@@ -445,12 +464,45 @@ npm run preview
 - ✅ Authentication and RLS security
 - ✅ Responsive UI with dark mode
 
-### Phase 2 (Next Priority)
+### Phase 2 (Next Priority - Implementation Plan)
+
+**Core Functionality Enhancements**:
 - 🟨 Enhanced error handling and retry logic
+  - Add toast notifications for success/error states
+  - Implement retry mechanisms for failed webhook calls
+  - Add global error boundary with user-friendly messages
+  - Implement proper loading states across all components
+
 - 🟨 Agent execution history and logging
+  - Create execution_logs table to track agent triggers
+  - Add real-time execution status display
+  - Implement agent performance metrics
+  - Add execution history view per agent
+
 - 🟨 File upload processing for upload triggers
+  - Implement file upload handling in AgentTrigger component
+  - Add file type validation and size limits
+  - Support multiple file formats (images, documents, etc.)
+  - Add file storage integration (Supabase Storage)
+
+- 🟨 Office Management System
+  - Complete office CRUD operations (edit, delete)
+  - Add office sharing and collaboration features
+  - Implement office templates and cloning
+  - Add bulk operations for departments/agents
+
 - 🟨 Real-time agent status indicators
-- 🟨 PixiJS drag-and-drop positioning
+  - Add WebSocket connection for live updates
+  - Show agent execution state (idle, running, completed, failed)
+  - Implement agent health monitoring
+  - Add visual indicators for agent activity
+
+**PixiJS Integration System**:
+- 🟨 Basic PixiJS setup with department positioning
+  - Implement drag-and-drop department positioning
+  - Add visual sprites for departments and agents
+  - Create interactive office floor visualization
+  - Add zoom and pan controls for large offices
 
 ### Phase 3 (Advanced Features)
 - ⏳ Agent templates and marketplace

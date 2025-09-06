@@ -79,3 +79,34 @@ export function useCreateDepartment() {
     }
   })
 }
+
+export function useUpdateDepartment() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ 
+      id, 
+      updates 
+    }: { 
+      id: string; 
+      updates: Partial<Department> 
+    }): Promise<Department> => {
+      const { data, error } = await supabase
+        .from('departments')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) {
+        throw new Error(error.message)
+      }
+
+      return data
+    },
+    onSuccess: (department) => {
+      queryClient.invalidateQueries({ queryKey: ['department', department.id] })
+      queryClient.invalidateQueries({ queryKey: ['departments', department.office_id] })
+    }
+  })
+}

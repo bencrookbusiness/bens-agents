@@ -11,13 +11,13 @@ import { Input } from './ui/input'
 import { Label } from './ui/label'
 import { Textarea } from './ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
-import type { CreateAgentData, TriggerType, ReturnType } from '../types/database'
+import { useCreateAgent } from '../hooks/useAgents'
+import type { TriggerType, ReturnType } from '../types/database'
 
 interface AddAgentModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   departmentId: string
-  onSubmit?: (data: CreateAgentData) => void
 }
 
 const triggerTypeOptions: { value: TriggerType; label: string; description: string }[] = [
@@ -66,40 +66,45 @@ const returnTypeOptions: { value: ReturnType; label: string; description: string
   }
 ]
 
-export function AddAgentModal({ open, onOpenChange, departmentId, onSubmit }: AddAgentModalProps) {
-  const [formData, setFormData] = useState<Partial<CreateAgentData>>({
+export function AddAgentModal({ open, onOpenChange, departmentId }: AddAgentModalProps) {
+  const [formData, setFormData] = useState({
     name: '',
     description: '',
-    trigger_type: 'click',
-    return_type: 'text',
+    trigger_type: 'click' as TriggerType,
+    return_type: 'text' as ReturnType,
     webhook_url: '',
     workflow_url: '',
-    department_id: departmentId
   })
+  
+  const createAgent = useCreateAgent()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (formData.name?.trim() && formData.webhook_url?.trim()) {
-      const agentData: CreateAgentData = {
-        name: formData.name.trim(),
-        description: formData.description?.trim(),
-        trigger_type: formData.trigger_type!,
-        return_type: formData.return_type!,
-        webhook_url: formData.webhook_url.trim(),
-        workflow_url: formData.workflow_url?.trim() || undefined,
-        department_id: departmentId
+    if (formData.name.trim() && formData.webhook_url.trim()) {
+      try {
+        await createAgent.mutateAsync({
+          name: formData.name.trim(),
+          description: formData.description.trim() || undefined,
+          trigger_type: formData.trigger_type,
+          return_type: formData.return_type,
+          webhook_url: formData.webhook_url.trim(),
+          workflow_url: formData.workflow_url.trim() || undefined,
+          department_id: departmentId
+        })
+        
+        // Reset form
+        setFormData({
+          name: '',
+          description: '',
+          trigger_type: 'click',
+          return_type: 'text',
+          webhook_url: '',
+          workflow_url: '',
+        })
+        onOpenChange(false)
+      } catch (error) {
+        console.error('Failed to create agent:', error)
       }
-      onSubmit?.(agentData)
-      setFormData({
-        name: '',
-        description: '',
-        trigger_type: 'click',
-        return_type: 'text',
-        webhook_url: '',
-        workflow_url: '',
-        department_id: departmentId
-      })
-      onOpenChange(false)
     }
   }
 
@@ -117,10 +122,11 @@ export function AddAgentModal({ open, onOpenChange, departmentId, onSubmit }: Ad
             <Label htmlFor="name">Agent Name</Label>
             <Input
               id="name"
-              value={formData.name || ''}
+              value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="e.g., Code Review Agent"
               required
+              disabled={createAgent.isPending}
             />
           </div>
           
@@ -223,11 +229,12 @@ export function AddAgentModal({ open, onOpenChange, departmentId, onSubmit }: Ad
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              disabled={createAgent.isPending}
             >
               Cancel
             </Button>
-            <Button type="submit">
-              Create Agent
+            <Button type="submit" disabled={createAgent.isPending}>
+              {createAgent.isPending ? 'Creating...' : 'Create Agent'}
             </Button>
           </DialogFooter>
         </form>

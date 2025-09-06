@@ -1,86 +1,73 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Edit, Zap } from 'lucide-react'
+import { ArrowLeft, Plus, Edit, Zap, Loader2 } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { AgentCard } from '../components/AgentCard'
 import { AddAgentModal } from '../components/AddAgentModal'
-import type { Department as DepartmentType, Agent } from '../types/database'
-
-// Mock data - same as OfficeFloor for now
-const mockDepartments: DepartmentType[] = [
-  {
-    id: '1',
-    name: 'Development',
-    office_id: '1',
-    position_x: 0,
-    position_y: 0,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    agents: [
-      {
-        id: '1',
-        name: 'Code Review Agent',
-        description: 'Reviews pull requests and provides feedback',
-        trigger_type: 'upload',
-        return_type: 'text',
-        webhook_url: 'https://webhook.site/test',
-        workflow_url: 'https://app.n8n.io/workflow/123',
-        department_id: '1',
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-    ]
-  },
-  {
-    id: '2',
-    name: 'Marketing',
-    office_id: '1',
-    position_x: 1,
-    position_y: 0,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    agents: [
-      {
-        id: '2',
-        name: 'Content Generator',
-        description: 'Generates marketing content based on prompts',
-        trigger_type: 'chat',
-        return_type: 'chat',
-        webhook_url: 'https://webhook.site/test2',
-        workflow_url: null,
-        department_id: '2',
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      {
-        id: '3',
-        name: 'Analytics Parser',
-        description: 'Processes analytics data daily',
-        trigger_type: 'automatic',
-        return_type: 'none',
-        webhook_url: 'https://webhook.site/test3',
-        workflow_url: null,
-        department_id: '2',
-        is_active: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-    ]
-  }
-]
+import { useDepartment, useUpdateDepartment } from '../hooks/useDepartments'
+import { useUpdateAgent, useDeleteAgent } from '../hooks/useAgents'
+import type { Agent } from '../types/database'
 
 export function Department() {
   const { departmentId } = useParams()
   const navigate = useNavigate()
   const [isAddAgentOpen, setIsAddAgentOpen] = useState(false)
   const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [departmentName, setDepartmentName] = useState('')
   
-  const department = mockDepartments.find(d => d.id === departmentId)
-  const [departmentName, setDepartmentName] = useState(department?.name || '')
+  const { data: department, isLoading, error } = useDepartment(departmentId!)
+  const updateAgent = useUpdateAgent()
+  const deleteAgent = useDeleteAgent()
+  const updateDepartment = useUpdateDepartment()
 
+  // Initialize department name when department loads
+  useEffect(() => {
+    if (department && !departmentName) {
+      setDepartmentName(department.name)
+    }
+  }, [department, departmentName])
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <Button
+          variant="outline"
+          onClick={() => navigate('/')}
+          className="flex items-center space-x-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Back to Office</span>
+        </Button>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <Button
+          variant="outline"
+          onClick={() => navigate('/')}
+          className="flex items-center space-x-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Back to Office</span>
+        </Button>
+        <div className="text-center py-12">
+          <p className="text-red-600 mb-4">Error loading department: {error.message}</p>
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
+        </div>
+      </div>
+    )
+  }
+
+  // Not found state
   if (!department) {
     return (
       <div className="space-y-4">
@@ -99,24 +86,46 @@ export function Department() {
     )
   }
 
-  const handleTitleSave = () => {
+  const handleTitleSave = async () => {
+    if (department && departmentName.trim() !== department.name) {
+      try {
+        await updateDepartment.mutateAsync({
+          id: department.id,
+          updates: { name: departmentName.trim() }
+        })
+      } catch (error) {
+        console.error('Failed to update department name:', error)
+        // Reset to original name on error
+        setDepartmentName(department.name)
+      }
+    }
     setIsEditingTitle(false)
-    // TODO: Save to backend
   }
 
-  const handleAgentToggle = (agentId: string) => {
-    // TODO: Toggle agent active status
-    console.log('Toggle agent', agentId)
+  const handleAgentToggle = async (agent: Agent) => {
+    try {
+      await updateAgent.mutateAsync({
+        id: agent.id,
+        updates: { is_active: !agent.is_active }
+      })
+    } catch (error) {
+      console.error('Failed to toggle agent:', error)
+    }
   }
 
-  const handleAgentDelete = (agentId: string) => {
-    // TODO: Delete agent
-    console.log('Delete agent', agentId)
+  const handleAgentDelete = async (agentId: string) => {
+    if (confirm('Are you sure you want to delete this agent?')) {
+      try {
+        await deleteAgent.mutateAsync(agentId)
+      } catch (error) {
+        console.error('Failed to delete agent:', error)
+      }
+    }
   }
 
   const handleAgentTrigger = (agent: Agent) => {
-    // TODO: Trigger agent based on type
-    console.log('Trigger agent', agent)
+    // This is already handled in AgentTrigger component
+    console.log('Triggering agent:', agent)
   }
 
   return (
@@ -150,11 +159,14 @@ export function Department() {
             </div>
           ) : (
             <>
-              <h1 className="text-3xl font-bold">{departmentName}</h1>
+              <h1 className="text-3xl font-bold">{department.name}</h1>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsEditingTitle(true)}
+                onClick={() => {
+                  setDepartmentName(department.name)
+                  setIsEditingTitle(true)
+                }}
               >
                 <Edit className="h-4 w-4" />
               </Button>
@@ -173,7 +185,7 @@ export function Department() {
             <AgentCard
               key={agent.id}
               agent={agent}
-              onToggle={() => handleAgentToggle(agent.id)}
+              onToggle={() => handleAgentToggle(agent)}
               onDelete={() => handleAgentDelete(agent.id)}
               onTrigger={() => handleAgentTrigger(agent)}
             />

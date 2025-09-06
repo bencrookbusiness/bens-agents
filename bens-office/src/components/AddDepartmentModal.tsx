@@ -9,30 +9,35 @@ import {
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
-import type { CreateDepartmentData } from '../types/database'
+import { useOffice } from '../contexts/OfficeContext'
+import { useCreateDepartment } from '../hooks/useDepartments'
 
 interface AddDepartmentModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit?: (data: CreateDepartmentData) => void
 }
 
-export function AddDepartmentModal({ open, onOpenChange, onSubmit }: AddDepartmentModalProps) {
+export function AddDepartmentModal({ open, onOpenChange }: AddDepartmentModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     description: ''
   })
+  const { selectedOffice } = useOffice()
+  const createDepartment = useCreateDepartment()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (formData.name.trim()) {
-      const departmentData: CreateDepartmentData = {
-        name: formData.name.trim(),
-        office_id: '1' // For now, using hardcoded office ID
+    if (formData.name.trim() && selectedOffice) {
+      try {
+        await createDepartment.mutateAsync({
+          name: formData.name.trim(),
+          office_id: selectedOffice.id
+        })
+        setFormData({ name: '', description: '' })
+        onOpenChange(false)
+      } catch (error) {
+        console.error('Failed to create department:', error)
       }
-      onSubmit?.(departmentData)
-      setFormData({ name: '', description: '' })
-      onOpenChange(false)
     }
   }
 
@@ -59,11 +64,12 @@ export function AddDepartmentModal({ open, onOpenChange, onSubmit }: AddDepartme
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              disabled={createDepartment.isPending}
             >
               Cancel
             </Button>
-            <Button type="submit">
-              Create Department
+            <Button type="submit" disabled={createDepartment.isPending || !selectedOffice}>
+              {createDepartment.isPending ? 'Creating...' : 'Create Department'}
             </Button>
           </DialogFooter>
         </form>
