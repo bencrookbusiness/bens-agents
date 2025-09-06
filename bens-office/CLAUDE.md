@@ -57,7 +57,7 @@ src/
 ### Essential Commands
 ```bash
 # Development
-npm run dev              # Start dev server (currently localhost:5181)
+npm run dev              # Start dev server (http://localhost:5173)
 npm run build           # Production build
 npm run preview         # Preview production build
 
@@ -71,7 +71,7 @@ npm run preview         # Preview production build
 ```
 
 ### Development Workflow
-1. **Local Development**: Vite dev server with hot reload on `http://localhost:5181`
+1. **Local Development**: Vite dev server with hot reload on `http://localhost:5173`
 2. **Database Changes**: Update `supabase-setup.sql` → Update TypeScript types → Update hooks
 3. **New Features**: Component → Hook → Route → Test locally
 4. **Production**: Test build → Deploy → Configure environment variables
@@ -421,19 +421,17 @@ npm run preview
 ## 🐛 Troubleshooting Common Issues
 
 ### Development Issues
-- **Port Conflicts**: Vite auto-increments port (5173 → 5174 → ... → 5181 current)
+- **Port Conflicts**: Vite auto-increments port (5173 → 5174 → 5175 etc.) - currently on 5173
 - **Environment Variables**: Restart dev server after .env changes
 - **TypeScript Errors**: Check interface definitions match database schema
 - **Supabase Connection**: Verify URL and anon key in .env
 
-### PostCSS/Tailwind CSS Issues ✅ RESOLVED
-- **ES Module Conflicts**: If project has `"type": "module"` in package.json, PostCSS config must use `.cjs` extension (`postcss.config.cjs`)
-- **Invalid @apply Directives**: PostCSS will crash on unknown utility classes like `@apply border-border`. Replace with standard CSS properties
-- **Plugin Configuration**: Use object syntax in PostCSS config: `{ tailwindcss: {}, autoprefixer: {} }`
-- **CSS Not Loading**: If no styles load, check PostCSS console errors first - invalid CSS can prevent all processing
-- **Diagnostic Testing**: Add `body { background-color: red !important; }` to CSS to test if any CSS is processing
+### CSS/Styling Issues ✅ RESOLVED
+- **PostCSS Configuration**: Use object syntax: `{ tailwindcss: {}, autoprefixer: {} }`
+- **Invalid @apply Directives**: Replace unknown utility classes with standard CSS
+- **Diagnostic**: Add `body { background: red !important; }` to test CSS processing
 
-**Status**: These issues have been resolved. The application is currently running successfully on localhost:5181 with all CSS/styling working properly.
+**Status**: All styling issues resolved. App running successfully with full CSS support.
 
 ### Authentication Issues
 - **TypeScript Import Error**: Use `import type { User, Session }` instead of `import { User, Session }` from '@supabase/supabase-js' - these are types, not runtime values
@@ -464,45 +462,13 @@ npm run preview
 - ✅ Authentication and RLS security
 - ✅ Responsive UI with dark mode
 
-### Phase 2 (Next Priority - Implementation Plan)
-
-**Core Functionality Enhancements**:
+### Phase 2 (Next Priority)
 - 🟨 Enhanced error handling and retry logic
-  - Add toast notifications for success/error states
-  - Implement retry mechanisms for failed webhook calls
-  - Add global error boundary with user-friendly messages
-  - Implement proper loading states across all components
-
-- 🟨 Agent execution history and logging
-  - Create execution_logs table to track agent triggers
-  - Add real-time execution status display
-  - Implement agent performance metrics
-  - Add execution history view per agent
-
+- 🟨 Agent execution history and logging  
 - 🟨 File upload processing for upload triggers
-  - Implement file upload handling in AgentTrigger component
-  - Add file type validation and size limits
-  - Support multiple file formats (images, documents, etc.)
-  - Add file storage integration (Supabase Storage)
-
-- 🟨 Office Management System
-  - Complete office CRUD operations (edit, delete)
-  - Add office sharing and collaboration features
-  - Implement office templates and cloning
-  - Add bulk operations for departments/agents
-
+- 🟨 Office Management System (edit, delete, sharing)
 - 🟨 Real-time agent status indicators
-  - Add WebSocket connection for live updates
-  - Show agent execution state (idle, running, completed, failed)
-  - Implement agent health monitoring
-  - Add visual indicators for agent activity
-
-**PixiJS Integration System**:
-- 🟨 Basic PixiJS setup with department positioning
-  - Implement drag-and-drop department positioning
-  - Add visual sprites for departments and agents
-  - Create interactive office floor visualization
-  - Add zoom and pan controls for large offices
+- 🟨 PixiJS drag-and-drop department positioning
 
 ### Phase 3 (Advanced Features)
 - ⏳ Agent templates and marketplace
