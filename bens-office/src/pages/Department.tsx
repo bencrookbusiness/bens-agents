@@ -6,7 +6,7 @@ import { Input } from '../components/ui/input'
 import { AgentCard } from '../components/AgentCard'
 import { AddAgentModal } from '../components/AddAgentModal'
 import { useDepartment, useUpdateDepartment } from '../hooks/useDepartments'
-import { useUpdateAgent, useDeleteAgent } from '../hooks/useAgents'
+import { useUpdateAgent, useDeleteAgent, useTriggerAgent } from '../hooks/useAgents'
 import type { Agent } from '../types/database'
 
 export function Department() {
@@ -20,6 +20,7 @@ export function Department() {
   const updateAgent = useUpdateAgent()
   const deleteAgent = useDeleteAgent()
   const updateDepartment = useUpdateDepartment()
+  const triggerAgent = useTriggerAgent()
 
   // Initialize department name when department loads
   useEffect(() => {
@@ -123,9 +124,16 @@ export function Department() {
     }
   }
 
-  const handleAgentTrigger = (agent: Agent) => {
-    // This is already handled in AgentTrigger component
-    console.log('Triggering agent:', agent)
+  const createAgentTriggerHandler = (agent: Agent) => {
+    return async (payload?: any) => {
+      try {
+        const result = await triggerAgent.mutateAsync({ agent, payload })
+        return result
+      } catch (error) {
+        console.error('Failed to trigger agent:', error)
+        throw error
+      }
+    }
   }
 
   return (
@@ -187,7 +195,7 @@ export function Department() {
               agent={agent}
               onToggle={() => handleAgentToggle(agent)}
               onDelete={() => handleAgentDelete(agent.id)}
-              onTrigger={() => handleAgentTrigger(agent)}
+              onTrigger={createAgentTriggerHandler(agent)}
             />
           ))}
         </div>

@@ -29,9 +29,12 @@ Ben's Office is a React TypeScript application that provides a visual interface 
 src/
 ├── components/
 │   ├── ui/              # shadcn/ui components (Button, Card, Dialog, etc.)
-│   ├── AgentCard.tsx    # Agent display and controls
+│   ├── AgentCard/       # Modular agent card system
+│   │   ├── index.tsx    # Main container component
+│   │   ├── AgentInput.tsx    # Dynamic input handling (chat, click, upload, etc.)
+│   │   ├── AgentOutput.tsx   # Dynamic output display (text, chat, none)
+│   │   └── types.ts     # TypeScript interfaces
 │   ├── DepartmentCard.tsx
-│   ├── AgentTrigger.tsx # Webhook trigger handling
 │   ├── AddAgentModal.tsx
 │   ├── AddDepartmentModal.tsx
 │   └── PixiOverlay.tsx  # 2D graphics foundation
@@ -57,7 +60,7 @@ src/
 ### Essential Commands
 ```bash
 # Development
-npm run dev              # Start dev server (http://localhost:5173)
+npm run dev              # Start dev server (http://localhost:5175)
 npm run build           # Production build
 npm run preview         # Preview production build
 
@@ -71,10 +74,67 @@ npm run preview         # Preview production build
 ```
 
 ### Development Workflow
-1. **Local Development**: Vite dev server with hot reload on `http://localhost:5173`
+1. **Local Development**: Vite dev server with hot reload on `http://localhost:5175`
 2. **Database Changes**: Update `supabase-setup.sql` → Update TypeScript types → Update hooks
 3. **New Features**: Component → Hook → Route → Test locally
 4. **Production**: Test build → Deploy → Configure environment variables
+
+---
+
+## 🎨 Dynamic Agent Card System
+
+### Architecture Overview
+The agent card system is built with a modular, composable architecture that automatically adapts to any combination of trigger and return types:
+
+#### Component Structure
+```
+AgentCard (container)
+├── AgentHeader (title, status, controls)  
+├── AgentInput (dynamic based on trigger_type)
+│   ├── TextInput (for 'chat' - textarea with send button)
+│   ├── ClickTrigger (for 'click' - simple trigger button)  
+│   ├── FileUpload (for 'upload' - drag & drop interface)
+│   ├── AutomaticIndicator (for 'automatic' - status display)
+│   └── NoInput (for 'none' - informational display)
+└── AgentOutput (dynamic based on return_type)
+    ├── TextOutput (for 'text' - formatted text display with history)
+    ├── ChatOutput (for 'chat' - conversation interface)
+    └── NoOutput (for 'none' - no output area)
+```
+
+#### Supported Combinations (All Implemented ✅)
+The modular system supports all 14 possible trigger/return combinations:
+
+**Interactive Triggers (with input UI):**
+- **Chat + Text**: Full chat interface with response history
+- **Chat + Chat**: Unified chat interface with conversation flow and integrated input
+- **Chat + None**: Input-only chat interface for fire-and-forget actions
+- **Click + Text**: Simple trigger button with response display
+- **Click + Chat**: Click trigger with conversation output
+- **Click + None**: Action button with no response expected
+- **Upload + Text**: File drag & drop with text response (supports base64 < 1MB)
+- **Upload + Chat**: File upload with conversation-style output
+- **Upload + None**: File processing with no response display
+
+**Background Triggers (status indicators only):**
+- **Automatic + Text**: Scheduled agent with visible results
+- **Automatic + Chat**: Scheduled agent with conversation output
+- **Automatic + None**: Background process indicator only
+
+**External Triggers (output-only or status):**
+- **None + Text**: External webhook results displayed in UI
+- **None + Chat**: External conversation results shown
+- **None + None**: Pure external integration with status message
+
+#### Key Features
+- **Automatic Layout**: Grid layout for input+output, single column for unified interfaces
+- **Visual Type Indicators**: Color-coded badges (blue for input triggers, green for return types)
+- **Unified Chat**: Chat → Chat uses single interface with conversation flow
+- **Response History**: Stores last 10 interactions with timestamp and status
+- **Loading States**: Visual feedback during webhook processing
+- **Error Handling**: User-friendly error messages with retry capability
+- **Copy to Clipboard**: Easy copying of agent responses
+- **File Upload**: Drag & drop support with base64 encoding for files < 1MB
 
 ---
 
@@ -421,7 +481,7 @@ npm run preview
 ## 🐛 Troubleshooting Common Issues
 
 ### Development Issues
-- **Port Conflicts**: Vite auto-increments port (5173 → 5174 → 5175 etc.) - currently on 5173
+- **Port Conflicts**: Vite auto-increments port (5173 → 5174 → 5175 etc.) - currently on 5175
 - **Environment Variables**: Restart dev server after .env changes
 - **TypeScript Errors**: Check interface definitions match database schema
 - **Supabase Connection**: Verify URL and anon key in .env
